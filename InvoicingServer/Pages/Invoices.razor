@@ -1,0 +1,210 @@
+﻿@page "/invoices"
+@attribute [Authorize]
+
+@using System.Net.Http.Json
+@using InvoicingServer.Models
+@inject ApiClient ApiClient
+
+<h3>Invoices</h3>
+
+@if (_isLoading)
+{
+    <p>Loading...</p>
+}
+else
+{
+    @if (_invoices.Count == 0)
+    {
+        <p>No invoices yet.</p>
+    }
+    else
+    {
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Client</th>
+                    <th>Issue</th>
+                    <th>Due</th>
+                    <th>Status</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var inv in _invoices)
+                {
+                    var clientName = _clients.FirstOrDefault(c => c.Id == inv.ClientId)?.Name ?? inv.ClientId;
+                    <tr>
+                        <td>@inv.InvoiceNumber</td>
+                        <td>@clientName</td>
+                        <td>@inv.IssueDate.ToString("yyyy-MM-dd")</td>
+                        <td>@inv.DueDate.ToString("yyyy-MM-dd")</td>
+                        <td>@inv.Status</td>
+                        <td>@inv.Totals.GrandTotal.ToString("C")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+}
+
+<hr />
+
+<h4>Create Invoice</h4>
+
+@if (_createError is not null)
+{
+    <div class="alert alert-danger">@_createError</div>
+}
+
+<div class="mb-3">
+    <label class="form-label">Client</label>
+    <select class="form-select" @bind="_newInvoice.ClientId">
+        <option value="">-- Select client --</option>
+        @foreach (var c in _clients)
+        {
+            <option value="@c.Id">@c.Name</option>
+        }
+    </select>
+</div>
+
+<div class="row">
+    <div class="col-md-3 mb-3">
+        <label class="form-label">Issue Date</label>
+        <InputDate @bind-Value="_issueDate" class="form-control" />
+    </div>
+    <div class="col-md-3 mb-3">
+        <label class="form-label">Due Date</label>
+        <InputDate @bind-Value="_dueDate" class="form-control" />
+    </div>
+    <div class="col-md-3 mb-3">
+        <label class="form-label">Currency</label>
+        <input class="form-control" @bind="_newInvoice.Currency" />
+    </div>
+</div>
+
+<h5>Line Item</h5>
+@if (_newInvoice.LineItems.Count == 0)
+{
+    <p>No line items.</p>
+}
+else
+{
+    var item = _newInvoice.LineItems[0];
+    <div class="mb-3">
+        <label class="form-label">Description</label>
+        <input class="form-control" @bind="item.Description" />
+    </div>
+    <div class="row">
+        <div class="col-md-3 mb-3">
+            <label class="form-label">Quantity</label>
+            <input type="number" step="0.01" class="form-control" @bind="item.Quantity" />
+        </div>
+        <div class="col-md-3 mb-3">
+            <label class="form-label">Unit Price</label>
+            <input type="number" step="0.01" class="form-control" @bind="item.UnitPrice" />
+        </div>
+        <div class="col-md-3 mb-3">
+            <label class="form-label">Tax Rate</label>
+            <input type="number" step="0.01" class="form-control" @bind="item.TaxRate" />
+            <small class="text-muted">e.g. 0.13 for 13%</small>
+        </div>
+    </div>
+}
+
+<div class="mb-3">
+    <label class="form-label">Notes</label>
+    <textarea class="form-control" @bind="_newInvoice.Notes"></textarea>
+</div>
+
+<button class="btn btn-primary" @onclick="CreateInvoiceAsync" disabled="@_isSaving">
+    @(_isSaving ? "Saving..." : "Save Invoice")
+</button>
+
+@code {
+    private List<ClientResponse> _clients = new();
+    private List<InvoiceResponse> _invoices = new();
+
+    private InvoiceCreateRequest _newInvoice = new();
+    private DateOnly _issueDate = DateOnly.FromDateTime(DateTime.Today);
+    private DateOnly _dueDate = DateOnly.FromDateTime(DateTime.Today.AddDays(14));
+
+    private bool _isLoading = true;
+    private bool _isSaving;
+    private string? _createError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        _isLoading = true;
+
+        // Get clients (for dropdown)
+        var clientsResponse = await ApiClient.GetAsync("/api/clients");
+        clientsResponse.EnsureSuccessStatusCode();
+        _clients = await clientsResponse.Content.ReadFromJsonAsync<List<ClientResponse>>() ?? new();
+
+        // Get invoices
+        var invoicesResponse = await ApiClient.GetAsync("/api/invoices");
+        invoicesResponse.EnsureSuccessStatusCode();
+        _invoices = await invoicesResponse.Content.ReadFromJsonAsync<List<InvoiceResponse>>() ?? new();
+
+        _isLoading = false;
+    }
+
+    private async Task CreateInvoiceAsync()
+    {
+        _createError = null;
+
+        if (string.IsNullOrWhiteSpace(_newInvoice.ClientId))
+        {
+            _createError = "Please select a client.";
+            return;
+        }
+
+        var item = _newInvoice.LineItems.FirstOrDefault();
+        if (item is null || string.IsNullOrWhiteSpace(item.Description))
+        {
+            _createError = "Please enter at least one line item with a description.";
+            return;
+        }
+
+        _isSaving = true;
+
+        try
+        {
+            _newInvoice.IssueDate = _issueDate;
+            _newInvoice.DueDate = _dueDate;
+
+            var response = await ApiClient.PostAsJsonAsync("/api/invoices", _newInvoice);
+            if (!response.IsSuccessStatusCode)
+            {
+                var msg = await response.Content.ReadAsStringAsync();
+                _createError = $"Failed to create invoice: {msg}";
+                return;
+            }
+
+            var created = await response.Content.ReadFromJsonAsync<InvoiceResponse>();
+            if (created is not null)
+            {
+                _invoices.Insert(0, created); // show newest first
+
+                // Reset form
+                _newInvoice = new InvoiceCreateRequest();
+                _issueDate = DateOnly.FromDateTime(DateTime.Today);
+                _dueDate = DateOnly.FromDateTime(DateTime.Today.AddDays(14));
+            }
+        }
+        catch (Exception ex)
+        {
+            _createError = ex.Message;
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+}

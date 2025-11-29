@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="InvoicingAPI/InvoicingAPI.csproj" />
+  <Project Path="InvoicingCore/InvoicingCore.csproj" />
+  <Project Path="InvoicingServer/InvoicingServer.csproj" />
+</Solution>
