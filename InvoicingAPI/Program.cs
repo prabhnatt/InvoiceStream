@@ -33,7 +33,7 @@ namespace InvoicingAPI
             builder.Services.AddScoped<InvoiceService>();
             builder.Services.AddScoped<InvoiceNumberService>();
             builder.Services.AddScoped<UserService>();
-
+            builder.Services.AddScoped<VerificationCodeService>();
             builder.Services.AddScoped<IUserContext, HeaderUserContext>();
 
             builder.Services.AddHttpContextAccessor();

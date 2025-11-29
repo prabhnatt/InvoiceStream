@@ -12,4 +12,10 @@
         public string Email { get; set; } = default!;
         public string Password { get; set; } = default!;
     }
+
+    public class EmailVerificationRequest
+    {
+        public string Email { get; set; } = default!;
+        public string Code { get; set; } = default!;
+    }
 }

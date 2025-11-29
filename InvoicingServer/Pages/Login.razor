@@ -1,0 +1,87 @@
+﻿@page "/login"
+@attribute [AllowAnonymous]
+
+@using System.Net.Http.Json
+@using InvoicingServer.Models
+@using InvoicingServer.Services
+@inject ServerClient Http
+@inject NavigationManager Nav
+
+<h3>Sign in</h3>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+
+<div class="mb-4">
+    <button class="btn btn-outline-primary" @onclick="LoginWithGoogle">
+        Continue with Google
+    </button>
+</div>
+
+<hr />
+
+<h4>Local Login</h4>
+<form method="post" action="/auth/local-login">
+    <div class="mb-3">
+        <label class="form-label">Email</label>
+        <input class="form-control" name="Email" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Password</label>
+        <input type="password" class="form-control" name="Password" />
+    </div>
+    <button type="submit" class="btn btn-primary">Sign in</button>
+</form>
+
+<hr />
+
+<h4>Create an account</h4>
+<div class="mb-3">
+    <label class="form-label">Email</label>
+    <input class="form-control" @bind="_register.Email" />
+</div>
+<div class="mb-3">
+    <label class="form-label">Display name (optional)</label>
+    <input class="form-control" @bind="_register.DisplayName" />
+</div>
+<div class="mb-3">
+    <label class="form-label">Password</label>
+    <input type="password" class="form-control" @bind="_register.Password" />
+</div>
+<button class="btn btn-secondary" @onclick="DoLocalRegister">Register</button>
+
+@code {
+    private LocalLoginRequest _login = new();
+    private LocalRegisterRequest _register = new();
+    private string? _error;
+
+    private async Task DoLocalRegister()
+    {
+        _error = null;
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync("/auth/local-register", _register);
+            if (!response.IsSuccessStatusCode)
+            {
+                var msg = await response.Content.ReadAsStringAsync();
+                _error = $"Registration failed: {msg}";
+                return;
+            }
+
+            // user + cookie created; later you can redirect to email verify page
+            Nav.NavigateTo("/clients", forceLoad: true);
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private void LoginWithGoogle()
+    {
+        Nav.NavigateTo("/auth/login-google", forceLoad: true);
+    }
+}
