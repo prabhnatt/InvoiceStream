@@ -1,0 +1,96 @@
+﻿@page "/clients"
+@using InvoicingUI.Models
+@inject InvoicingUI.Services.ClientApiService ClientApi
+
+<h3>Clients</h3>
+
+@if (_isLoading)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Notes</th>
+                <th>Created</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var c in _clients)
+            {
+                <tr>
+                    <td>@c.Name</td>
+                    <td>@c.Email</td>
+                    <td>@c.Notes</td>
+                    <td>@c.CreatedAt.ToLocalTime().ToString("g")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<h4>Add Client</h4>
+
+<div class="mb-3">
+    <label class="form-label">Name</label>
+    <input class="form-control" @bind="_newClient.Name" />
+</div>
+
+<div class="mb-3">
+    <label class="form-label">Email</label>
+    <input class="form-control" @bind="_newClient.Email" />
+</div>
+
+<div class="mb-3">
+    <label class="form-label">Notes</label>
+    <textarea class="form-control" @bind="_newClient.Notes"></textarea>
+</div>
+
+<button class="btn btn-primary" @onclick="CreateClientAsync" disabled="@_isSaving">
+    @(_isSaving ? "Saving..." : "Save")
+</button>
+
+@code {
+    private List<ClientResponse> _clients = new();
+    private ClientCreateRequest _newClient = new();
+    private bool _isLoading = true;
+    private bool _isSaving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadClientsAsync();
+    }
+
+    private async Task LoadClientsAsync()
+    {
+        _isLoading = true;
+        _clients = await ClientApi.GetClientsAsync();
+        _isLoading = false;
+    }
+
+    private async Task CreateClientAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_newClient.Name))
+            return;
+
+        _isSaving = true;
+
+        try
+        {
+            var created = await ClientApi.CreateClientAsync(_newClient);
+            if (created is not null)
+            {
+                _clients.Add(created);
+                _newClient = new ClientCreateRequest();
+            }
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+}
