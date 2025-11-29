@@ -1,5 +1,6 @@
 using InvoicingCore;
 using InvoicingCore.Configuration;
+using InvoicingCore.Interfaces;
 using InvoicingCore.Services;
 using InvoicingServer.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -72,7 +73,10 @@ builder.Services
 
 builder.Services.Configure<MongoSettings>(builder.Configuration.GetSection("Mongo"));
 builder.Services.AddSingleton<MongoDbContext>();
+
 builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<VerificationCodeService>();
+builder.Services.AddScoped<IEmailSender, DevEmailSender>();
 
 // HttpClient for calling API
 builder.Services.AddHttpClient<ApiClient>((sp, client) =>
@@ -83,12 +87,16 @@ builder.Services.AddHttpClient<ApiClient>((sp, client) =>
     client.BaseAddress = new Uri(apiBase);
 });
 
-//Authorization
-builder.Services.AddAuthorization(options =>
+builder.Services.AddHttpClient<ServerClient>((sp, client) =>
 {
-    options.FallbackPolicy = options.DefaultPolicy;
-    //TODO: Custom Policies?
+    var config = sp.GetRequiredService<IConfiguration>();
+
+    var serverBase = config["ServerBaseUrl"];
+    client.BaseAddress = new Uri(serverBase);
 });
+
+//Authorization
+builder.Services.AddAuthorization();
 
 var app = builder.Build();
 

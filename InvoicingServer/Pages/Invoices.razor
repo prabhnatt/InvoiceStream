@@ -1,9 +1,10 @@
 ﻿@page "/invoices"
 @attribute [Authorize]
 
+@inject ApiClient ApiClient
 @using System.Net.Http.Json
 @using InvoicingServer.Models
-@inject ApiClient ApiClient
+@using InvoicingServer.Services
 
 <h3>Invoices</h3>
 

@@ -3,6 +3,7 @@
 @inject ApiClient ApiClient
 @using System.Net.Http.Json;
 @using InvoicingServer.Models
+@using InvoicingServer.Services
 
 <h3>Clients</h3>
 
@@ -61,7 +62,7 @@ else
     }
 
     private async Task LoadClientsAsync()
-    {
+    {       
         _isLoading = true;
 
         var response = await ApiClient.GetAsync("/api/clients");

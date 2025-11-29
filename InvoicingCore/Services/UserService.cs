@@ -112,6 +112,7 @@ namespace InvoicingCore.Services
                 DisplayName = displayName ?? email,
                 CreatedAt = now,
                 LastLoginAt = now,
+                EmailVerified = false,                
                 LocalAuth = new LocalAuthInfo
                 {
                     PasswordHash = hash,
@@ -149,6 +150,18 @@ namespace InvoicingCore.Services
             await _db.Users.ReplaceOneAsync(u => u.Id == user.Id, user, cancellationToken: ct);
 
             return user;
+        }
+
+        //Email Verification
+        public async Task MarkEmailVerifiedAsync(string userId, CancellationToken ct = default)
+        {
+            var now = DateTime.UtcNow;
+
+            var update = Builders<User>.Update
+                .Set(u => u.EmailVerified, true)
+                .Set(u => u.EmailVerifiedAt, now);
+
+            await _db.Users.UpdateOneAsync(u => u.Id == userId, update, cancellationToken: ct);
         }
 
         private static string NormalizeEmail(string email) => email.Trim().ToLowerInvariant();

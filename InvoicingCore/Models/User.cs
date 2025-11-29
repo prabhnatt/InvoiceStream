@@ -7,6 +7,8 @@
         public string? DisplayName { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime LastLoginAt { get; set; }
+        public bool EmailVerified { get; set; }
+        public DateTime? EmailVerifiedAt { get; set; }
         public List<UserIdentity> Identities { get; set; } = new();
         public LocalAuthInfo? LocalAuth { get; set; }
         public UserSettings Settings { get; set; } = new();
