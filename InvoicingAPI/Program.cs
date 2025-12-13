@@ -35,6 +35,8 @@ namespace InvoicingAPI
             builder.Services.AddScoped<UserService>();
             builder.Services.AddScoped<VerificationCodeService>();
             builder.Services.AddScoped<IUserContext, HeaderUserContext>();
+            builder.Services.AddScoped<InvoicePdfService>();
+            builder.Services.AddScoped<BusinessProfileService>();
 
             builder.Services.AddHttpContextAccessor();
 
@@ -55,6 +57,7 @@ namespace InvoicingAPI
 
             app.MapClientEndpoints();
             app.MapInvoiceEndpoints();
+            app.MapProfileEndpoints();
 
             app.Run();
 

@@ -28,6 +28,7 @@ namespace InvoicingCore
         public IMongoCollection<Invoice> Invoices => _database.GetCollection<Invoice>("invoices");
         public IMongoCollection<InvoiceSequence> InvoiceSequences => _database.GetCollection<InvoiceSequence>("invoiceSequences");
         public IMongoCollection<VerificationCode> VerificationCodes => _database.GetCollection<VerificationCode>("verificationCodes");
+        public IMongoCollection<BusinessProfile> BusinessProfiles => _database.GetCollection<BusinessProfile>("BusinessProfiles");
     }
 
 }

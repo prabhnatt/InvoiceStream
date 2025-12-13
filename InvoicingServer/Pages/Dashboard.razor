@@ -1,0 +1,77 @@
+﻿@page "/dashboard"
+@attribute [Authorize]
+@inject ApiClient ApiClient
+@using InvoicingServer.Services;
+@using System.Net.Http.Json;
+@using InvoicingServer.Models
+
+<h2>Overview</h2>
+
+@if (_isLoading)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <div class="cards">
+        <div class="card">
+            <div class="card-label">Active Clients</div>
+            <div class="card-value">@_stats.TotalClients</div>
+        </div>
+        <div class="card">
+            <div class="card-label">Open Invoices</div>
+            <div class="card-value">@_stats.OpenInvoices</div>
+        </div>
+        <div class="card">
+            <div class="card-label">Outstanding</div>
+            <div class="card-value">@_stats.OutstandingTotal.ToString("C")</div>
+        </div>
+    </div>
+}
+
+@code {
+    private DashboardStats _stats = new();
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        
+        _isLoading = false;
+    }
+
+    private class DashboardStats
+    {
+        public int TotalClients { get; set; }
+        public int OpenInvoices { get; set; }
+        public decimal OutstandingTotal { get; set; }
+    }
+}
+
+<style>
+    .cards {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .card {
+        min-width: 180px;
+        padding: 1rem 1.25rem;
+        border-radius: .75rem;
+        background: #020617;
+        border: 1px solid #1f2937;
+    }
+
+    .card-label {
+        font-size: .8rem;
+        text-transform: uppercase;
+        color: #9ca3af;
+        margin-bottom: .4rem;
+    }
+
+    .card-value {
+        font-size: 1.4rem;
+        font-weight: 600;
+        color: #e5e7eb;
+    }
+</style>

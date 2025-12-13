@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace InvoicingCore.Interfaces
+﻿namespace InvoicingCore.Interfaces
 {
     public interface IEmailSender
     {

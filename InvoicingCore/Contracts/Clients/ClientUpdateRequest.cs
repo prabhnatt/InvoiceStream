@@ -2,7 +2,7 @@
 
 namespace InvoicingCore.Contracts.Clients
 {
-    public class ClientResponse
+    public class ClientUpdateRequest
     {
         public string Id { get; set; } = default!;
         public string Name { get; set; } = string.Empty;
@@ -17,8 +17,6 @@ namespace InvoicingCore.Contracts.Clients
         public int? DefaultPaymentTermsDays { get; set; }
         public decimal? DefaultTaxRate { get; set; }
         public string? Notes { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime UpdatedAt { get; set; }
     }
 
 }

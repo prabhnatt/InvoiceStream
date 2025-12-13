@@ -1,7 +1,7 @@
-﻿using System.Security.Cryptography;
-using System.Text;
-using InvoicingCore.Models;
+﻿using InvoicingCore.Models;
 using MongoDB.Driver;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace InvoicingCore.Services
 {
@@ -31,7 +31,7 @@ namespace InvoicingCore.Services
                 Purpose = purpose,
                 CodeHash = Hash(rawCode),
                 CreatedAt = now,
-                ExpiresAt = now.AddMinutes(15), // 15-minute validity
+                ExpiresAt = now.AddMinutes(15), //15-minute validity
                 Used = false
             };
 
@@ -66,7 +66,7 @@ namespace InvoicingCore.Services
             if (match is null)
                 return null;
 
-            // Mark used
+            //Mark used
             var update = Builders<VerificationCode>.Update
                 .Set(v => v.Used, true)
                 .Set(v => v.UsedAt, now);
