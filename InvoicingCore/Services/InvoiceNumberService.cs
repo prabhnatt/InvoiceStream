@@ -18,7 +18,7 @@ namespace InvoicingCore.Services
 
             var update = Builders<InvoiceSequence>.Update
                 .Inc(x => x.NextInvoiceNumber, 1)
-                .SetOnInsert(x => x.Id, userId); // so first upsert sets Id to userId
+                .SetOnInsert(x => x.Id, userId); //so first upsert sets Id to userId
 
             var options = new FindOneAndUpdateOptions<InvoiceSequence>
             {

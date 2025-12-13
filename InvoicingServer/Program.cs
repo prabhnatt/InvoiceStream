@@ -11,10 +11,10 @@ using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Razor + Blazor Server
+//Razor + Blazor Server
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
-builder.Services.AddControllers(); // for AuthController
+builder.Services.AddControllers(); //for AuthController
 
 builder.Services.AddHttpContextAccessor();
 
@@ -56,7 +56,7 @@ builder.Services
                 if (string.IsNullOrWhiteSpace(subject))
                     return;
 
-                // Map Google -> internal user (and persist in Mongo)
+                //Map Google -> internal user (and persist in Mongo)
                 var user = await userService.GetOrCreateFromExternalAsync(
                     provider: "google",
                     subject: subject,
@@ -64,7 +64,7 @@ builder.Services
                     displayName: name,
                     ct: httpContext.RequestAborted);
 
-                // Add *your* user id into auth cookie
+                //Add *your* user id into auth cookie
                 var identity = (ClaimsIdentity)ctx.Principal!.Identity!;
                 identity.AddClaim(new Claim("userId", user.Id));
             }
@@ -78,7 +78,7 @@ builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<VerificationCodeService>();
 builder.Services.AddScoped<IEmailSender, DevEmailSender>();
 
-// HttpClient for calling API
+//HttpClient for calling API
 builder.Services.AddHttpClient<ApiClient>((sp, client) =>
 {
     var config = sp.GetRequiredService<IConfiguration>();

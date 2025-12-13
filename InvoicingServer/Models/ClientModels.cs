@@ -11,14 +11,6 @@
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
     }
-    public class ClientCreateRequest
-    {
-        public string Name { get; set; } = string.Empty;
-        public string? Email { get; set; }
-        public string? Phone { get; set; }
-        public Address? Address { get; set; } = new();
-        public string? Notes { get; set; }
-    }
 
     public class Address
     {

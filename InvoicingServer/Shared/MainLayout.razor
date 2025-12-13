@@ -1,19 +1,173 @@
 ﻿@inherits LayoutComponentBase
+@using Microsoft.AspNetCore.Components.Authorization
+@inject NavigationManager Nav
 
-<PageTitle>InvoicingServer</PageTitle>
+@code {
+    string path = "/";
+}
 
-<div class="page">
+<div class="app-shell">
     <div class="sidebar">
-        <NavMenu />
-    </div>
-
-    <main>
-        <div class="top-row px-4">
-            <a href="https://docs.microsoft.com/aspnet/" target="_blank">About</a>
+        <div class="logo" @onclick="() => Nav.NavigateTo(path)">
+            <img src=".\images\logo.svg" class="logo-img" />
+            <span class="logo-text">Invoice Stream</span>
         </div>
 
-        <article class="content px-4">
+        <AuthorizeView>
+            <Authorized>
+                <nav class="nav-links">
+                    <NavLink href="/dashboard" class="nav-item" Match="NavLinkMatch.All">
+                        <span class="icon">🏠</span> Dashboard
+                    </NavLink>
+                    <NavLink href="/clients" class="nav-item">
+                        <span class="icon">👥</span> Clients
+                    </NavLink>
+                    <NavLink href="/invoices" class="nav-item">
+                        <span class="icon">📄</span> Invoices
+                    </NavLink>
+                    <NavLink href="/settings" class="nav-item">
+                        <span class="icon">⚙️</span> Settings
+                    </NavLink>
+                </nav>
+            </Authorized>
+            <NotAuthorized>
+                <nav class="nav-links">
+                    <NavLink href="/login" class="nav-item" Match="NavLinkMatch.All">
+                        <span class="icon">🔐</span> Login
+                    </NavLink>
+                </nav>
+            </NotAuthorized>
+        </AuthorizeView>
+    </div>
+
+    <div class="main">
+        <header class="topbar">
+            <AuthorizeView>
+                <Authorized>
+                    <div class="user-info">
+                        <span class="user-name">@context.User.Identity?.Name</span>
+                        <a href="/auth/logout" class="btn-link">Logout</a>
+                    </div>
+                </Authorized>
+                <NotAuthorized>
+                    <a href="/login" class="btn-link">Login</a>
+                </NotAuthorized>
+            </AuthorizeView>
+        </header>
+
+        <main class="content">
             @Body
-        </article>
-    </main>
+        </main>
+    </div>
 </div>
+
+<style>
+    .app-shell {
+        display: flex;
+        min-height: 100vh;
+        background: #0f172a;
+        color: #e5e7eb;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .sidebar {
+        width: 240px;
+        padding: 1.5rem 1rem;
+        border-right: 1px solid #1f2937;
+        background: radial-gradient(circle at top, #1e293b, #020617);
+    }
+
+    .logo {
+        display: flex;
+        align-items: center;
+        gap: .55rem;
+        cursor: pointer;
+        padding: .4rem .2rem;
+    }
+
+    .logo-img {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+    }
+
+    .logo-text {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #e5e7eb; /*looks great against dark mode*/
+    }
+
+    .nav-links {
+        display: flex;
+        flex-direction: column;
+        gap: .25rem;
+    }
+
+    .nav-item {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        padding: .55rem .75rem;
+        border-radius: .5rem;
+        color: #9ca3af;
+        text-decoration: none;
+        font-size: .9rem;
+    }
+
+        .nav-item .icon {
+            width: 1.2rem;
+            text-align: center;
+        }
+
+        .nav-item.active {
+            background: linear-gradient(to right, #22c55e33, #22c55e11);
+            color: #f9fafb;
+        }
+
+        .nav-item:hover {
+            background: #111827;
+            color: #e5e7eb;
+        }
+
+    .main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .topbar {
+        height: 56px;
+        border-bottom: 1px solid #1f2937;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding: 0 1.5rem;
+        background: #020617aa;
+        backdrop-filter: blur(12px);
+    }
+
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: .75rem;
+        font-size: .9rem;
+    }
+
+    .user-name {
+        color: #e5e7eb;
+    }
+
+    .btn-link {
+        color: #9ca3af;
+        text-decoration: none;
+        font-size: .85rem;
+    }
+
+        .btn-link:hover {
+            color: #e5e7eb;
+        }
+
+    .content {
+        padding: 1.5rem;
+    }
+</style>

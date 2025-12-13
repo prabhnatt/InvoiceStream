@@ -1,6 +1,9 @@
 ﻿using InvoicingAPI.Services;
 using InvoicingCore;
 using InvoicingCore.Contracts.Clients;
+using InvoicingCore.Models;
+using MongoDB.Bson;
+using MongoDB.Driver;
 
 namespace InvoicingAPI.Endpoints
 {
@@ -13,26 +16,38 @@ namespace InvoicingAPI.Endpoints
 
             //POST /api/clients
             group.MapPost("/", async (
-                IUserContext userContext,
+                HttpContext http,
                 ClientCreateRequest request,
-                ClientService clientService,
+                MongoDbContext db,
                 CancellationToken ct) =>
             {
-                var userId = userContext.UserId;
+                var userId = http.Request.Headers["X-User-Id"].FirstOrDefault();
                 if (string.IsNullOrWhiteSpace(userId))
-                    return Results.BadRequest("Missing X-User-Id header.");
+                    return Results.Unauthorized();
 
-                try
+                var client = new Client
                 {
-                    var client = await clientService.CreateClientAsync(userId, request, ct);
-                    var response = ClientService.ToResponse(client);
-                    return Results.Created($"/api/clients/{response.Id}", response);
-                }
-                catch (ArgumentException ex)
-                {
-                    return Results.BadRequest(ex.Message);
-                }
+                    Id = ObjectId.GenerateNewId().ToString(),
+                    UserId = userId,
+                    Name = request.Name,
+                    LegalName = request.LegalName,
+                    TaxNumber = request.TaxNumber,
+                    Address = request.Address,
+                    PrimaryContactName = request.PrimaryContactName,
+                    PrimaryContactRole = request.PrimaryContactRole,
+                    PrimaryEmail = request.PrimaryEmail,
+                    PrimaryPhone = request.PrimaryPhone,
+                    DefaultCurrency = request.DefaultCurrency,
+                    DefaultPaymentTermsDays = request.DefaultPaymentTermsDays,
+                    DefaultTaxRate = request.DefaultTaxRate,
+                    Notes = request.Notes
+                };
+
+                await db.Clients.InsertOneAsync(client, cancellationToken: ct);
+
+                return Results.Ok(MapToClientResponse(client));
             });
+
 
             //GET /api/clients
             group.MapGet("/", async (
@@ -69,29 +84,48 @@ namespace InvoicingAPI.Endpoints
 
             //PUT /api/clients/{id}
             group.MapPut("/{id}", async (
-                IUserContext userContext,
                 string id,
-                ClientCreateRequest request,
-                ClientService clientService,
+                HttpContext http,
+                ClientUpdateRequest request,
+                MongoDbContext db,
                 CancellationToken ct) =>
             {
-                var userId = userContext.UserId;
+                var userId = http.Request.Headers["X-User-Id"].FirstOrDefault();
                 if (string.IsNullOrWhiteSpace(userId))
-                    return Results.BadRequest("Missing X-User-Id header.");
+                    return Results.Unauthorized();
 
-                try
-                {
-                    var updated = await clientService.UpdateClientAsync(userId, id, request, ct);
-                    if (updated is null)
-                        return Results.NotFound();
+                if (id != request.Id)
+                    return Results.BadRequest("Id mismatch.");
 
-                    return Results.Ok(ClientService.ToResponse(updated));
-                }
-                catch (ArgumentException ex)
-                {
-                    return Results.BadRequest(ex.Message);
-                }
+                var update = Builders<Client>.Update
+                    .Set(x => x.Name, request.Name)
+                    .Set(x => x.LegalName, request.LegalName)
+                    .Set(x => x.TaxNumber, request.TaxNumber)
+                    .Set(x => x.Address, request.Address)
+                    .Set(x => x.PrimaryContactName, request.PrimaryContactName)
+                    .Set(x => x.PrimaryContactRole, request.PrimaryContactRole)
+                    .Set(x => x.PrimaryEmail, request.PrimaryEmail)
+                    .Set(x => x.PrimaryPhone, request.PrimaryPhone)
+                    .Set(x => x.DefaultCurrency, request.DefaultCurrency)
+                    .Set(x => x.DefaultPaymentTermsDays, request.DefaultPaymentTermsDays)
+                    .Set(x => x.DefaultTaxRate, request.DefaultTaxRate)
+                    .Set(x => x.Notes, request.Notes);
+
+                var result = await db.Clients.FindOneAndUpdateAsync(
+                    x => x.Id == id && x.UserId == userId,
+                    update,
+                    new FindOneAndUpdateOptions<Client>
+                    {
+                        ReturnDocument = ReturnDocument.After
+                    },
+                    ct);
+
+                if (result is null)
+                    return Results.NotFound();
+
+                return Results.Ok(MapToClientResponse(result));
             });
+
 
             //DELETE /api/clients/{id}
             group.MapDelete("/{id}", async (
@@ -113,5 +147,26 @@ namespace InvoicingAPI.Endpoints
 
             return app;
         }
+
+        private static ClientResponse MapToClientResponse(Client c)
+        {
+            return new ClientResponse
+            {
+                Id = c.Id,
+                Name = c.Name,
+                LegalName = c.LegalName,
+                TaxNumber = c.TaxNumber,
+                Address = c.Address,
+                PrimaryContactName = c.PrimaryContactName,
+                PrimaryContactRole = c.PrimaryContactRole,
+                PrimaryEmail = c.PrimaryEmail,
+                PrimaryPhone = c.PrimaryPhone,
+                DefaultCurrency = c.DefaultCurrency,
+                DefaultPaymentTermsDays = c.DefaultPaymentTermsDays,
+                DefaultTaxRate = c.DefaultTaxRate,
+                Notes = c.Notes
+            };
+        }
+
     }
 }

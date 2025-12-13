@@ -1,0 +1,22 @@
+<svg width="210" height="210" viewBox="0 0 210 210" fill="none" xmlns="http://www.w3.org/2000/svg">
+	<!-- Rounded square background -->
+	<rect x="15" y="15" width="180" height="180" rx="42"
+		  fill="url(#navyGradient)" />
+
+	<!-- flowing S -->
+	<path d="M140 60C120 40 80 40 70 60C60 80 90 90 110 100C130 110 150 120 140 140C130 160 90 165 70 145"
+		  stroke="white"
+		  stroke-width="14"
+		  stroke-linecap="round"
+		  stroke-linejoin="round"
+		  opacity="0.97"/>
+
+	<defs>
+		<linearGradient id="navyGradient" x1="0" y1="0" x2="210" y2="210" gradientUnits="userSpaceOnUse">
+			<stop offset="0%" stop-color="#1e3a8a" />
+			<!-- Navy 800 -->
+			<stop offset="100%" stop-color="#0f172a" />
+			<!-- Slate 900 -->
+		</linearGradient>
+	</defs>
+</svg>

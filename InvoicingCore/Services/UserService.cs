@@ -10,7 +10,7 @@ namespace InvoicingCore.Services
         public UserService(MongoDbContext db)
         {
             _db = db;
-        }        
+        }
         //Google; Apple to be added
         public async Task<User> GetOrCreateFromExternalAsync(
             string provider,
@@ -19,7 +19,7 @@ namespace InvoicingCore.Services
             string? displayName,
             CancellationToken ct = default)
         {
-            // provider + subject uniquely identify an external account
+            //provider + subject uniquely identify an external account
             var filter = Builders<User>.Filter.ElemMatch(
                 u => u.Identities,
                 i => i.Provider == provider && i.Subject == subject);
@@ -37,7 +37,7 @@ namespace InvoicingCore.Services
                 if (!string.IsNullOrWhiteSpace(email))
                 {
                     identity.Email ??= email;
-                    existing.Email = email; // keep primary email current
+                    existing.Email = email; //keep primary email current
                 }
 
                 if (!string.IsNullOrWhiteSpace(displayName))
@@ -48,7 +48,7 @@ namespace InvoicingCore.Services
                 return existing;
             }
 
-            // Create new user
+            //Create new user
             var userId = $"usr_{Guid.NewGuid():N}";
 
             var user = new User
@@ -101,7 +101,7 @@ namespace InvoicingCore.Services
             var now = DateTime.UtcNow;
             var userId = $"usr_{Guid.NewGuid():N}";
 
-            // bcrypt hash (salt + work factor embedded in result)
+            //bcrypt hash (salt + work factor embedded in result)
             var workFactor = 12;
             var hash = BCrypt.Net.BCrypt.HashPassword(password, workFactor);
 
@@ -112,7 +112,7 @@ namespace InvoicingCore.Services
                 DisplayName = displayName ?? email,
                 CreatedAt = now,
                 LastLoginAt = now,
-                EmailVerified = false,                
+                EmailVerified = false,
                 LocalAuth = new LocalAuthInfo
                 {
                     PasswordHash = hash,
@@ -140,12 +140,12 @@ namespace InvoicingCore.Services
 
             var hash = user.LocalAuth.PasswordHash;
 
-            // bcrypt verify (checks embedded salt)
+            //bcrypt verify (checks embedded salt)
             var ok = BCrypt.Net.BCrypt.Verify(password, hash);
             if (!ok)
                 return null;
 
-            // update last login
+            //update last login
             user.LastLoginAt = DateTime.UtcNow;
             await _db.Users.ReplaceOneAsync(u => u.Id == user.Id, user, cancellationToken: ct);
 

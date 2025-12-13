@@ -23,7 +23,7 @@ namespace InvoicingCore.Services
             if (request.LineItems is null || request.LineItems.Count == 0)
                 throw new ArgumentException("At least one line item is required.", nameof(request.LineItems));
 
-            // Get the next invoice number for this user
+            //Get the next invoice number for this user
             var invoiceNumber = await _invoiceNumberService.GetNextInvoiceNumberAsync(userId, ct);
 
             var now = DateTime.UtcNow;
@@ -44,8 +44,8 @@ namespace InvoicingCore.Services
                 UserId = userId,
                 ClientId = request.ClientId,
                 InvoiceNumber = invoiceNumber,
-                Type = "Invoice",
-                Status = "Draft",
+                Type = request.Type,
+                Status = request.Status,
                 IssueDate = request.IssueDate,
                 DueDate = request.DueDate,
                 Currency = request.Currency,
@@ -130,6 +130,8 @@ namespace InvoicingCore.Services
                 .Set(i => i.IssueDate, request.IssueDate)
                 .Set(i => i.DueDate, request.DueDate)
                 .Set(i => i.Currency, request.Currency)
+                .Set(i => i.Type, request.Type)
+                .Set(i => i.Status, request.Status)
                 .Set(i => i.LineItems, lineItems)
                 .Set(i => i.Totals, totals)
                 .Set(i => i.Notes, request.Notes)
@@ -155,23 +157,26 @@ namespace InvoicingCore.Services
             return result.DeletedCount > 0;
         }
 
-        public static InvoiceResponse ToResponse(Invoice invoice) => new()
+        public static InvoiceResponse ToResponse(Invoice invoice)
         {
-            Id = invoice.Id,
-            UserId = invoice.UserId,
-            ClientId = invoice.ClientId,
-            InvoiceNumber = invoice.InvoiceNumber,
-            Type = invoice.Type,
-            Status = invoice.Status,
-            IssueDate = invoice.IssueDate,
-            DueDate = invoice.DueDate,
-            Currency = invoice.Currency,
-            LineItems = invoice.LineItems,
-            Totals = invoice.Totals,
-            Notes = invoice.Notes,
-            Tags = invoice.Tags,
-            CreatedAt = invoice.CreatedAt,
-            UpdatedAt = invoice.UpdatedAt
-        };
+            return new()
+            {
+                Id = invoice.Id,
+                UserId = invoice.UserId,
+                ClientId = invoice.ClientId,
+                InvoiceNumber = invoice.InvoiceNumber,
+                Type = invoice.Type,
+                Status = invoice.Status,
+                IssueDate = invoice.IssueDate,
+                DueDate = invoice.DueDate,
+                Currency = invoice.Currency,
+                LineItems = invoice.LineItems,
+                Totals = invoice.Totals,
+                Notes = invoice.Notes,
+                Tags = invoice.Tags,
+                CreatedAt = invoice.CreatedAt,
+                UpdatedAt = invoice.UpdatedAt
+            };
+        }
     }
 }

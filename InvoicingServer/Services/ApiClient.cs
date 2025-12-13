@@ -13,6 +13,12 @@ namespace InvoicingServer.Services
             _httpContextAccessor = httpContextAccessor;
         }
 
+        public Task<HttpResponseMessage> GetRawAsync(string uri)
+        {
+            EnsureUserHeader();
+            return _httpClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead);
+        }
+
         private void EnsureUserHeader()
         {
             var ctx = _httpContextAccessor.HttpContext;
@@ -32,6 +38,16 @@ namespace InvoicingServer.Services
         {
             EnsureUserHeader();
             return await _httpClient.GetAsync(uri);
+        }
+
+        public async Task<HttpResponseMessage> PostEmptyAsync(string url)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Post, url)
+            {
+                Content = new StringContent("", System.Text.Encoding.UTF8, "application/json")
+            };
+
+            return await _httpClient.SendAsync(request);
         }
 
         public async Task<HttpResponseMessage> PostAsJsonAsync<T>(string uri, T value)

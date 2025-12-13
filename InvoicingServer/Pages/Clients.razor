@@ -1,11 +1,12 @@
 ﻿@page "/clients"
 @attribute [Authorize]
 @inject ApiClient ApiClient
-@using System.Net.Http.Json;
-@using InvoicingServer.Models
+@using InvoicingCore.Contracts.Clients
 @using InvoicingServer.Services
+@using System.Net.Http.Json
+@using InvoicingCore.Models
 
-<h3>Clients</h3>
+<h2>Clients</h2>
 
 @if (_isLoading)
 {
@@ -13,48 +14,195 @@
 }
 else
 {
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Notes</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var c in _clients)
+    <div class="clients-page">
+        <!-- LEFT: LIST -->
+        <div class="clients-list-pane">
+            <div class="toolbar">
+                <input class="form-control search"
+                       placeholder="Search clients..."
+                       @bind="_search" @bind:event="oninput" />
+
+                <button class="btn btn-success w-100 mt-2" @onclick="NewClient">
+                    + New Client
+                </button>
+            </div>
+
+            <div class="clients-list">
+                @if (!FilteredClients.Any())
+                {
+                    <div class="empty-state">
+                        <p>No clients found.</p>
+                        <p class="hint">Create your first client to start invoicing.</p>
+                    </div>
+                }
+                else
+                {
+                    @foreach (var c in FilteredClients)
+                    {
+                        var selected = _selectedClient != null && _selectedClient.Id == c.Id;
+
+                        <div class="client-card @(selected ? "selected" : "")"
+                             @onclick="() => SelectClient(c)">
+                            <div class="client-name">@c.Name</div>
+                            <div class="client-sub">
+                                @if (!string.IsNullOrWhiteSpace(c.PrimaryEmail ?? c.PrimaryEmail))
+                                {
+                                    <span>@(c.PrimaryEmail ?? c.PrimaryEmail)</span>
+                                }
+                                else
+                                {
+                                    <span class="muted">No email</span>
+                                }
+                            </div>
+                            @if (!string.IsNullOrWhiteSpace(c.PrimaryContactName))
+                            {
+                                <div class="client-sub">
+                                    <span>@c.PrimaryContactName</span>
+                                    @if (!string.IsNullOrWhiteSpace(c.PrimaryContactRole))
+                                    {
+                                        <span> · @c.PrimaryContactRole</span>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+
+        <!-- RIGHT: DETAILS / EDITOR -->
+        <div class="clients-editor-pane">
+            @if (_editor == null)
             {
-                <tr>
-                    <td>@c.Name</td>
-                    <td>@c.Email</td>
-                    <td>@c.Notes</td>
-                </tr>
+                <div class="empty-state">
+                    <p>Select a client on the left or click "New Client".</p>
+                </div>
             }
-        </tbody>
-    </table>
+            else
+            {
+                <EditForm Model="_editor" OnValidSubmit="SaveClientAsync">
+                    <h4>@(_editor.Id == null ? "New Client" : "Edit Client")</h4>
+
+                    <div class="mb-3">
+                        <label class="form-label">Client Name</label>
+                        <InputText class="form-control" @bind-Value="_editor.Name" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Legal Name (optional)</label>
+                        <InputText class="form-control" @bind-Value="_editor.LegalName" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Tax Number (HST/GST/VAT)</label>
+                        <InputText class="form-control" @bind-Value="_editor.TaxNumber" />
+                    </div>
+
+                    <h5 class="mt-3">Address</h5>
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <label class="form-label">Line 1</label>
+                            <InputText class="form-control" @bind-Value="_editor.Address.Line1" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Line 2</label>
+                            <InputText class="form-control" @bind-Value="_editor.Address.Line2" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">City</label>
+                            <InputText class="form-control" @bind-Value="_editor.Address.City" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Province / State</label>
+                            <InputText class="form-control" @bind-Value="_editor.Address.Province" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Postal Code</label>
+                            <InputText class="form-control" @bind-Value="_editor.Address.PostalCode" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Country</label>
+                            <InputText class="form-control" @bind-Value="_editor.Address.Country" />
+                        </div>
+                    </div>
+
+                    <h5 class="mt-3">Contact</h5>
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <label class="form-label">Contact Name</label>
+                            <InputText class="form-control" @bind-Value="_editor.PrimaryContactName" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Role</label>
+                            <InputText class="form-control" @bind-Value="_editor.PrimaryContactRole" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Email</label>
+                            <InputText class="form-control" @bind-Value="_editor.PrimaryEmail" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Phone</label>
+                            <InputText class="form-control" @bind-Value="_editor.PrimaryPhone" />
+                        </div>
+                    </div>
+
+                    <h5 class="mt-3">Client Defaults (optional)</h5>
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <label class="form-label">Currency</label>
+                            <InputText class="form-control" @bind-Value="_editor.DefaultCurrency" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Payment Terms (days)</label>
+                            <InputNumber class="form-control" @bind-Value="_editor.DefaultPaymentTermsDays" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Default Tax Rate</label>
+                            <InputNumber class="form-control" @bind-Value="_editor.DefaultTaxRate" />
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <label class="form-label">Internal Notes</label>
+                        <InputTextArea class="form-control" rows="3" @bind-Value="_editor.Notes" />
+                    </div>
+
+                    <div class="editor-footer mt-3">
+                        <button class="btn btn-success" type="submit" disabled="@_isSaving">
+                            @(_isSaving ? "Saving..." : "Save")
+                        </button>
+
+                        @if (_editor.Id != null)
+                        {
+                            <button type="button"
+                                    class="btn btn-outline-danger ms-2"
+                                    @onclick="DeleteClientAsync"
+                                    disabled="@_isSaving">
+                                Delete
+                            </button>
+                        }
+                    </div>
+                </EditForm>
+            }
+        </div>
+    </div>
 }
-
-<h4>Add Client</h4>
-
-<div class="mb-3">
-    <label class="form-label">Name</label>
-    <input class="form-control" @bind="_newClient.Name" />
-</div>
-
-<div class="mb-3">
-    <label class="form-label">Email</label>
-    <input class="form-control" @bind="_newClient.Email" />
-</div>
-
-<button class="btn btn-primary" @onclick="CreateClientAsync" disabled="@_isSaving">
-    @(_isSaving ? "Saving..." : "Save")
-</button>
 
 @code {
     private List<ClientResponse> _clients = new();
-    private ClientCreateRequest _newClient = new();
+    private ClientResponse? _selectedClient;
+    private ClientEditModel? _editor;
     private bool _isLoading = true;
     private bool _isSaving;
+    private string _search = string.Empty;
+
+    private IEnumerable<ClientResponse> FilteredClients =>
+        string.IsNullOrWhiteSpace(_search)
+            ? _clients
+            : _clients.Where(c =>
+                (c.Name ?? "").Contains(_search, StringComparison.OrdinalIgnoreCase) ||
+                (c.PrimaryEmail ?? c.PrimaryEmail ?? "").Contains(_search, StringComparison.OrdinalIgnoreCase) ||
+                (c.PrimaryContactName ?? "").Contains(_search, StringComparison.OrdinalIgnoreCase));
 
     protected override async Task OnInitializedAsync()
     {
@@ -62,40 +210,249 @@ else
     }
 
     private async Task LoadClientsAsync()
-    {       
+    {
         _isLoading = true;
 
         var response = await ApiClient.GetAsync("/api/clients");
         response.EnsureSuccessStatusCode();
 
-        var list = await response.Content.ReadFromJsonAsync<List<ClientResponse>>();
-        _clients = list ?? new();
+        _clients = await response.Content.ReadFromJsonAsync<List<ClientResponse>>() ?? new();
 
         _isLoading = false;
     }
 
-    private async Task CreateClientAsync()
+    private void NewClient()
     {
-        if (string.IsNullOrWhiteSpace(_newClient.Name))
-            return;
+        _selectedClient = null;
+        _editor = new ClientEditModel
+        {
+            Address = new Address()
+        };
+    }
+
+    private void SelectClient(ClientResponse client)
+    {
+        _selectedClient = client;
+        _editor = new ClientEditModel
+        {
+            Id = client.Id,
+            Name = client.Name,
+            LegalName = client.LegalName,
+            TaxNumber = client.TaxNumber,
+            Address = client.Address ?? new Address(),
+            PrimaryContactName = client.PrimaryContactName,
+            PrimaryContactRole = client.PrimaryContactRole,
+            PrimaryEmail = client.PrimaryEmail ?? "",
+            PrimaryPhone = client.PrimaryPhone,
+            DefaultCurrency = client.DefaultCurrency,
+            DefaultPaymentTermsDays = client.DefaultPaymentTermsDays,
+            DefaultTaxRate = client.DefaultTaxRate,
+            Notes = client.Notes
+        };
+    }
+
+    private async Task SaveClientAsync()
+    {
+        if (_editor == null) return;
+        if (string.IsNullOrWhiteSpace(_editor.Name)) return;
 
         _isSaving = true;
 
         try
         {
-            var response = await ApiClient.PostAsJsonAsync("/api/clients", _newClient);
+            HttpResponseMessage response;
+
+            if (_editor.Id == null)
+            {
+                //create
+                var create = new ClientCreateRequest
+                {
+                    Name = _editor.Name,
+                    LegalName = _editor.LegalName,
+                    TaxNumber = _editor.TaxNumber,
+                    Address = _editor.Address,
+                    PrimaryContactName = _editor.PrimaryContactName,
+                    PrimaryContactRole = _editor.PrimaryContactRole,
+                    PrimaryEmail = _editor.PrimaryEmail,
+                    PrimaryPhone = _editor.PrimaryPhone,
+                    DefaultCurrency = _editor.DefaultCurrency,
+                    DefaultPaymentTermsDays = _editor.DefaultPaymentTermsDays,
+                    DefaultTaxRate = _editor.DefaultTaxRate,
+                    Notes = _editor.Notes
+                };
+
+                response = await ApiClient.PostAsJsonAsync("/api/clients", create);
+            }
+            else
+            {
+                //update
+                var update = new ClientUpdateRequest
+                {
+                    Id = _editor.Id,
+                    Name = _editor.Name,
+                    LegalName = _editor.LegalName,
+                    TaxNumber = _editor.TaxNumber,
+                    Address = _editor.Address,
+                    PrimaryContactName = _editor.PrimaryContactName,
+                    PrimaryContactRole = _editor.PrimaryContactRole,
+                    PrimaryEmail = _editor.PrimaryEmail,
+                    PrimaryPhone = _editor.PrimaryPhone,
+                    DefaultCurrency = _editor.DefaultCurrency,
+                    DefaultPaymentTermsDays = _editor.DefaultPaymentTermsDays,
+                    DefaultTaxRate = _editor.DefaultTaxRate,
+                    Notes = _editor.Notes
+                };
+
+                response = await ApiClient.PutAsJsonAsync($"/api/clients/{_editor.Id}", update);
+            }
+
             response.EnsureSuccessStatusCode();
 
-            var created = await response.Content.ReadFromJsonAsync<ClientResponse>();
-            if (created is not null)
+            var saved = await response.Content.ReadFromJsonAsync<ClientResponse>();
+            if (saved is null) return;
+
+            var existingIndex = _clients.FindIndex(c => c.Id == saved.Id);
+            if (existingIndex >= 0)
             {
-                _clients.Add(created);
-                _newClient = new ClientCreateRequest();
+                _clients[existingIndex] = saved;
             }
+            else
+            {
+                _clients.Add(saved);
+            }
+
+            _selectedClient = saved;
+            _editor.Id = saved.Id;
         }
         finally
         {
             _isSaving = false;
         }
     }
+
+    private async Task DeleteClientAsync()
+    {
+        if (_editor?.Id == null) return;
+
+        _isSaving = true;
+
+        try
+        {
+            var response = await ApiClient.DeleteAsync($"/api/clients/{_editor.Id}");
+            response.EnsureSuccessStatusCode();
+
+            _clients.RemoveAll(c => c.Id == _editor.Id);
+            _selectedClient = null;
+            _editor = null;
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private class ClientEditModel
+    {
+        public string? Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string? LegalName { get; set; }
+        public string? TaxNumber { get; set; }
+
+        public Address Address { get; set; } = new Address();
+
+        public string? PrimaryContactName { get; set; }
+        public string? PrimaryContactRole { get; set; }
+        public string? PrimaryEmail { get; set; }
+        public string? PrimaryPhone { get; set; }
+
+        public string? DefaultCurrency { get; set; }
+        public int? DefaultPaymentTermsDays { get; set; }
+        public decimal? DefaultTaxRate { get; set; }
+
+        public string? Notes { get; set; }
+    }
 }
+
+<style>
+    .clients-page {
+        display: grid;
+        grid-template-columns: minmax(220px, 320px) minmax(0, 1fr);
+        gap: 1.25rem;
+    }
+
+    .clients-list-pane {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .toolbar {
+        margin-bottom: .75rem;
+    }
+
+    .search {
+        font-size: .9rem;
+    }
+
+    .clients-list {
+        max-height: calc(100vh - 220px);
+        overflow-y: auto;
+    }
+
+    .client-card {
+        padding: .55rem .7rem;
+        border-radius: .6rem;
+        background: #020617;
+        border: 1px solid #111827;
+        margin-bottom: .35rem;
+        cursor: pointer;
+        font-size: .85rem;
+    }
+
+    .client-card:hover {
+        border-color: #4b5563;
+    }
+
+    .client-card.selected {
+        border-color: #22c55e;
+        background: radial-gradient(circle at top left, #22c55e22, #020617);
+    }
+
+    .client-name {
+        font-weight: 600;
+        color: #e5e7eb;
+    }
+
+    .client-sub {
+        color: #9ca3af;
+        font-size: .8rem;
+    }
+
+    .client-sub .muted {
+        color: #6b7280;
+    }
+
+    .clients-editor-pane {
+        padding: .75rem 1rem;
+        border-radius: .75rem;
+        background: #020617;
+        border: 1px solid #1f2937;
+    }
+
+    .editor-footer {
+        display: flex;
+        align-items: center;
+    }
+
+    .empty-state {
+        padding: 1rem;
+        border-radius: .75rem;
+        border: 1px dashed #374151;
+        background: #020617;
+    }
+
+    .empty-state .hint {
+        margin-top: .25rem;
+        font-size: .85rem;
+        color: #9ca3af;
+    }
+</style>

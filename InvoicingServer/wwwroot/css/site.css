@@ -63,6 +63,52 @@ a, .btn-link {
     color: white;
 }
 
-    .blazor-error-boundary::after {
-        content: "An error has occurred."
+.blazor-error-boundary::after {
+    content: "An error has occurred."
+}
+
+.line-items-table th {
+    color: #e5e7eb !important; /*brighter header text*/
+    font-weight: 600;
+}
+
+.line-items-table td {
+    color: #f3f4f6 !important; /*light text for good contrast*/
+}
+
+.line-items-table input.form-control,
+.line-items-table input.form-control-sm {
+    background: #111827 !important; /*dark-input background*/
+    border: 1px solid #374151 !important; /*visible border*/
+    color: #f9fafb !important; /*bright text*/
+}
+
+.line-items-table input::placeholder {
+    color: #6b7280 !important; /*muted placeholder*/
+}
+
+/*Hover state for inputs*/
+.line-items-table input:focus {
+    outline: none !important;
+    border-color: #3b82f6 !important; /*blue highlight*/
+    box-shadow: 0 0 0 1px #3b82f6;
+}
+
+/*Remove the bright white row background flash*/
+.line-items-table tr {
+    background-color: transparent !important;
+}
+
+    /*Row divider for improved readability*/
+    .line-items-table tr + tr td {
+        border-top: 1px solid #1f2937 !important;
     }
+
+/*Remove red X hover glow*/
+.line-items-table .remove-btn {
+    color: #ef4444 !important;
+}
+
+.line-items-table .remove-btn:hover {
+    color: #f87171 !important;
+}

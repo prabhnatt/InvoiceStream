@@ -1,0 +1,153 @@
+﻿@page "/settings"
+@attribute [Authorize]
+
+@inject ApiClient ApiClient
+
+@using InvoicingServer.Services
+@using System.Net.Http.Json
+@using InvoicingCore.Models
+
+<h2>Business Settings</h2>
+
+@if (_isLoading)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <EditForm Model="_profile" OnValidSubmit="SaveAsync">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">Business Name</label>
+                <InputText class="form-control" @bind-Value="_profile.BusinessName" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Legal Name (optional)</label>
+                <InputText class="form-control" @bind-Value="_profile.LegalName" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">HST / GST Number</label>
+                <InputText class="form-control" @bind-Value="_profile.TaxNumber" />
+            </div>
+        </div>
+
+        <h5 class="mt-3">Address</h5>
+        <div class="row g-2">
+            <div class="col-md-6">
+                <label class="form-label">Line 1</label>
+                <InputText class="form-control" @bind-Value="_profile.Address.Line1" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Line 2</label>
+                <InputText class="form-control" @bind-Value="_profile.Address.Line2" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">City</label>
+                <InputText class="form-control" @bind-Value="_profile.Address.City" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Province / State</label>
+                <InputText class="form-control" @bind-Value="_profile.Address.Province" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Postal Code</label>
+                <InputText class="form-control" @bind-Value="_profile.Address.PostalCode" />
+            </div>
+        </div>
+
+        <h5 class="mt-3">Contact</h5>
+        <div class="row g-2">
+            <div class="col-md-4">
+                <label class="form-label">Primary Contact Name</label>
+                <InputText class="form-control" @bind-Value="_profile.PrimaryContactName" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Role</label>
+                <InputText class="form-control" @bind-Value="_profile.PrimaryContactRole" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Contact Email</label>
+                <InputText class="form-control" @bind-Value="_profile.PrimaryEmail" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Phone</label>
+                <InputText class="form-control" @bind-Value="_profile.PrimaryPhone" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Website</label>
+                <InputText class="form-control" @bind-Value="_profile.Website" />
+            </div>
+        </div>
+
+        <h5 class="mt-3">Invoice Defaults</h5>
+        <div class="row g-2">
+            <div class="col-md-3">
+                <label class="form-label">Currency</label>
+                <InputText class="form-control" @bind-Value="_profile.DefaultCurrency" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Default Tax Rate</label>
+                <InputNumber class="form-control" @bind-Value="_profile.DefaultTaxRate" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Payment Terms (days)</label>
+                <InputNumber class="form-control" @bind-Value="_profile.DefaultPaymentTermsDays" />
+            </div>
+        </div>
+
+        <div class="mt-3">
+            <label class="form-label">Default Invoice Notes</label>
+            <InputTextArea class="form-control" rows="3" @bind-Value="_profile.DefaultInvoiceNotes" />
+        </div>
+
+        <div class="mt-3">
+            <label class="form-label">Payment Instructions (appears on PDF)</label>
+            <InputTextArea class="form-control" rows="3" @bind-Value="_profile.PaymentInstructions" />
+        </div>
+
+        <div class="mt-3">
+            <label class="form-label">Logo URL (for now)</label>
+            <InputText class="form-control" @bind-Value="_profile.LogoUrl" />
+            @if (!string.IsNullOrWhiteSpace(_profile.LogoUrl))
+            {
+                <div class="mt-2">
+                    <img src="@_profile.LogoUrl" style="max-height:60px;" />
+                </div>
+            }
+        </div>
+
+        <button class="btn btn-success mt-3" type="submit" disabled="@_isSaving">
+            @(_isSaving ? "Saving..." : "Save")
+        </button>
+    </EditForm>
+}
+
+@code {
+    private BusinessProfile _profile = new() { Address = new Address() };
+    private bool _isLoading = true;
+    private bool _isSaving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        var response = await ApiClient.GetAsync("/api/profile/me");
+        response.EnsureSuccessStatusCode();
+        var p = await response.Content.ReadFromJsonAsync<BusinessProfile>();
+        _profile = p ?? new BusinessProfile { Address = new Address() };
+        _profile.Address ??= new Address();
+        _isLoading = false;
+    }
+
+    private async Task SaveAsync()
+    {
+        _isSaving = true;
+        var response = await ApiClient.PutAsJsonAsync("/api/profile/me", _profile);
+        response.EnsureSuccessStatusCode();
+        _isSaving = false;
+    }
+}

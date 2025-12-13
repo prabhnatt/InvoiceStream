@@ -50,15 +50,15 @@ public class AuthController : Controller
                        "This code will expire in 15 minutes.";
 
             await _emailSender.SendEmailAsync(user.Email, subject, body, HttpContext.RequestAborted);
-            
+
             Console.WriteLine($"[DEV] Email verification code for {user.Email}: {code}");
 
             await SignInUserAsync(user);
 
-            return Ok(new { userId = user.Id, email = user.Email, displayName = user.DisplayName, emailVerified = user.EmailVerified});
+            return Ok(new { userId = user.Id, email = user.Email, displayName = user.DisplayName, emailVerified = user.EmailVerified });
         }
         catch (InvalidOperationException ex)
-        {      
+        {
             return BadRequest(ex.Message);
         }
     }
@@ -106,7 +106,7 @@ public class AuthController : Controller
         if (user is null)
             return Ok(new { message = "Email verified." });
 
-        // Optionally sign them in or refresh cookie
+        //Optionally sign them in or refresh cookie
         await SignInUserAsync(user);
 
         return Ok(new

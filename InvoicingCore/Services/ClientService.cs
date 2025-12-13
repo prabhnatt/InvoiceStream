@@ -2,7 +2,7 @@
 using InvoicingCore.Models;
 using MongoDB.Driver;
 
-namespace InvoicingCore
+namespace InvoicingCore.Services
 {
     public class ClientService
     {
@@ -27,8 +27,8 @@ namespace InvoicingCore
                 Id = Guid.NewGuid().ToString("N"),
                 UserId = userId,
                 Name = request.Name.Trim(),
-                Email = request.Email,
-                Phone = request.Phone,
+                PrimaryEmail = request.PrimaryEmail,
+                PrimaryPhone = request.PrimaryPhone,
                 Address = request.Address,
                 Notes = request.Notes,
                 CreatedAt = now,
@@ -74,8 +74,8 @@ namespace InvoicingCore
 
             var update = Builders<Client>.Update
                 .Set(c => c.Name, request.Name.Trim())
-                .Set(c => c.Email, request.Email)
-                .Set(c => c.Phone, request.Phone)
+                .Set(c => c.PrimaryEmail, request.PrimaryEmail)
+                .Set(c => c.PrimaryPhone, request.PrimaryPhone)
                 .Set(c => c.Address, request.Address)
                 .Set(c => c.Notes, request.Notes)
                 .Set(c => c.UpdatedAt, DateTime.UtcNow);
@@ -99,17 +99,20 @@ namespace InvoicingCore
             return result.DeletedCount > 0;
         }
 
-        public static ClientResponse ToResponse(Client c) => new()
+        public static ClientResponse ToResponse(Client c)
         {
-            Id = c.Id,
-            Name = c.Name,
-            Email = c.Email,
-            Phone = c.Phone,
-            Address = c.Address,
-            Notes = c.Notes,
-            CreatedAt = c.CreatedAt,
-            UpdatedAt = c.UpdatedAt
-        };
+            return new()
+            {
+                Id = c.Id,
+                Name = c.Name,
+                PrimaryEmail = c.PrimaryEmail,
+                PrimaryPhone = c.PrimaryPhone,
+                Address = c.Address,
+                Notes = c.Notes,
+                CreatedAt = c.CreatedAt,
+                UpdatedAt = c.UpdatedAt
+            };
+        }
     }
 
 }
